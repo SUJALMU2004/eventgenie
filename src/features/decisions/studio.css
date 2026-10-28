@@ -1,0 +1,462 @@
+.decision-studio {
+  margin-top: 45px;
+  scroll-margin-top: 20px;
+}
+.studio-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 22px 0;
+}
+.studio-navigation a {
+  padding: 12px 17px;
+  border: 1px solid #c9d5bf;
+  border-radius: 7px;
+  font-size: 12px;
+  color: #25553f;
+  background: #f0f4e9;
+  text-decoration: none;
+  min-height: 44px;
+}
+.studio-section {
+  scroll-margin-top: 20px;
+}
+.studio-section > summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  position: relative;
+  padding-right: 40px;
+}
+.studio-section > summary::after {
+  content: "+";
+  position: absolute;
+  right: 0;
+  top: 18px;
+  font-size: 28px;
+  color: #236650;
+}
+.studio-section[open] > summary::after {
+  content: "−";
+}
+.studio-section > summary h2 {
+  font-size: 29px;
+  margin: 0;
+}
+.studio-section > summary .eyebrow {
+  font-size: 9px;
+}
+.studio-content {
+  border-top: 1px solid var(--line);
+  margin-top: 20px;
+  padding-top: 24px;
+}
+.studio-content label {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.6;
+  display: block;
+  min-width: 0;
+}
+.studio-content label > input:not([type="checkbox"]):not([type="range"]),
+.studio-content label > select,
+.studio-content label > textarea {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid var(--control-border);
+  background: #fff;
+  border-radius: 6px;
+  padding: 11px 12px;
+  margin-top: 8px;
+  min-height: 46px;
+  color: var(--ink);
+  font-size: 13px;
+}
+.studio-content input[type="range"] {
+  width: 100%;
+  min-height: 36px;
+  display: block;
+  accent-color: var(--teal);
+}
+.studio-content input[type="checkbox"] {
+  accent-color: var(--teal);
+  width: 17px;
+  height: 17px;
+}
+.studio-content .form-grid {
+  margin-block: 18px;
+}
+.studio-content .form-grid > * {
+  min-width: 0;
+}
+.standalone-label {
+  max-width: 600px;
+  margin-block: 20px;
+}
+.preset-buttons,
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-block: 18px;
+}
+.action-row .button {
+  font-size: 12px;
+}
+.known-cost-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px;
+}
+.known-cost-form label {
+  flex: 1;
+}
+.table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+  margin: 22px 0;
+}
+.decision-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  text-align: left;
+  line-height: 1.65;
+}
+.decision-table caption {
+  text-align: left;
+  padding-bottom: 14px;
+  color: #435b47;
+  font-size: 12px;
+  font-weight: bold;
+}
+.decision-table th,
+.decision-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid #e0e5d8;
+  vertical-align: top;
+  min-width: 90px;
+  overflow-wrap: anywhere;
+}
+.decision-table thead {
+  background: #f0f4e9;
+  font-size: 11px;
+}
+.decision-table small {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 5px;
+}
+.financial-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin: 0 0 20px;
+}
+.financial-summary > div {
+  border: 1px solid #dce3d2;
+  padding: 18px;
+  border-radius: 8px;
+  background: #f5f7ed;
+}
+.financial-summary dt {
+  color: #4c6150;
+  font-size: 11px;
+  line-height: 1.7;
+}
+.financial-summary dd {
+  margin: 8px 0 0;
+  font:
+    24px Georgia,
+    serif;
+}
+.rescue-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin-block: 20px 30px;
+}
+.rescue-options article {
+  border: 1px solid #d5deca;
+  padding: 20px;
+  border-radius: 8px;
+  background: #f6f7ee;
+  min-width: 0;
+}
+.rescue-options h4 {
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0 0 10px;
+}
+.rescue-options p {
+  font-size: 11px;
+  color: #52654e;
+}
+.rescue-options .button {
+  font-size: 10px;
+  white-space: normal;
+  padding: 10px;
+}
+.vendor-form,
+.payment-records {
+  padding-block: 22px;
+  margin-top: 20px;
+  border-block: 1px solid var(--line);
+}
+.payment-list,
+.saved-scenarios {
+  list-style: none;
+  padding: 0;
+}
+.payment-list li,
+.saved-scenarios li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+.payment-list li > span,
+.saved-scenarios li > span {
+  flex: 1;
+  min-width: 180px;
+}
+.readiness-findings {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  list-style: none;
+  padding: 0;
+}
+.readiness-findings li {
+  background: #f7f2e5;
+  border: 1px solid #dacfaa;
+  border-radius: 8px;
+  padding: 18px;
+}
+.readiness-findings .finding-critical {
+  background: #fdf0e8;
+  border-color: #ddb5a3;
+}
+.readiness-findings .finding-info {
+  background: #eff4e9;
+  border-color: #c8d6bd;
+}
+.readiness-findings strong {
+  font-size: 11px;
+  color: #70442a;
+}
+.readiness-findings p {
+  margin: 8px 0;
+  font-size: 12px;
+}
+.readiness-findings code {
+  font-size: 9px;
+  color: #5c6252;
+  overflow-wrap: anywhere;
+}
+.readiness-deadlines {
+  font-size: 12px;
+  line-height: 1.8;
+  margin-block: 25px;
+}
+.schedule-block {
+  border: 1px solid #d6decc;
+  border-radius: 8px;
+  margin: 18px 0;
+  padding: 20px;
+}
+.schedule-block legend {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0 8px;
+}
+.schedule-summary {
+  margin-block: 25px;
+}
+.ai-operation {
+  border-top: 1px solid var(--line);
+  margin-top: 25px;
+  padding-top: 12px;
+}
+.ai-operation > summary {
+  color: var(--teal);
+}
+.ai-proposal {
+  border: 1px solid #b9cdb0;
+  border-radius: 10px;
+  padding: 24px;
+  background: #f3f7ec;
+  margin-top: 25px;
+}
+.ai-proposal h3 {
+  margin-top: 15px;
+}
+.content-preview {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font:
+    12px/1.8 Arial,
+    sans-serif;
+  background: #fffdf7;
+  padding: 20px;
+  border: 1px solid #d6decb;
+  border-radius: 6px;
+  max-height: 420px;
+  overflow: auto;
+}
+.recommendation {
+  border-top: 1px solid #ccd9c0;
+  padding-top: 20px;
+  margin-top: 20px;
+  font-size: 12px;
+}
+.recommendation h4 {
+  font-size: 16px;
+  margin-block: 0 10px;
+}
+.import-preview {
+  background: #f3f6ea;
+  border: 1px solid #c7d7bc;
+  border-radius: 8px;
+  padding: 24px;
+  margin-top: 24px;
+}
+.checkbox-label {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  margin-block: 20px;
+}
+.sample-tools {
+  margin-bottom: 25px;
+  padding: 20px;
+  border: 1px dashed #c3ceb7;
+  border-radius: 8px;
+}
+.sample-tools p {
+  margin: 0;
+}
+@media (max-width: 760px) {
+  .financial-summary,
+  .rescue-options {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .readiness-findings {
+    grid-template-columns: 1fr;
+  }
+  .studio-section > summary h2 {
+    font-size: 27px;
+  }
+}
+@media (max-width: 580px) {
+  .financial-summary,
+  .rescue-options {
+    grid-template-columns: 1fr;
+  }
+  .studio-content .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .studio-navigation {
+    gap: 7px;
+  }
+  .studio-navigation a {
+    padding: 10px 12px;
+    font-size: 11px;
+  }
+  .ai-proposal,
+  .schedule-block {
+    padding: 18px;
+  }
+  .decision-table {
+    font-size: 11px;
+  }
+  .decision-table th,
+  .decision-table td {
+    padding: 10px 8px;
+  }
+  .content-preview {
+    padding: 14px;
+  }
+  .studio-content .action-row .button {
+    max-width: 100%;
+    white-space: normal;
+  }
+}
+@media print {
+  @page {
+    margin: 16mm;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 11pt;
+  }
+  .site-header,
+  .site-footer,
+  .skip-link,
+  button,
+  .no-print,
+  dialog,
+  .dashboard-toolbar,
+  .saved-link,
+  .dashboard-header > a,
+  .privacy-footnote,
+  .sample-tools,
+  [data-print="hide"] {
+    display: none !important;
+  }
+  .page-width {
+    max-width: none;
+    padding: 0;
+  }
+  .panel,
+  .overview-panel,
+  .stats-grid,
+  .warnings-panel {
+    box-shadow: none;
+    border-color: #bbb;
+    background: white;
+  }
+  .dashboard-columns {
+    display: block;
+  }
+  h1,
+  h2,
+  h3,
+  summary {
+    break-after: avoid;
+  }
+  table,
+  .task-list > li,
+  .vendor-list > li,
+  .schedule-summary tr,
+  .idea-card,
+  .invitation-card {
+    break-inside: avoid;
+  }
+  .studio-section > summary::after {
+    display: none;
+  }
+  .table-scroll {
+    overflow: visible;
+  }
+  .budget-chart {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .financial-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .studio-content form {
+    display: none !important;
+  }
+}
