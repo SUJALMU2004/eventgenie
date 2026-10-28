@@ -8,7 +8,32 @@ import { plan, clock } from "@/test/fixtures";
 import { scenarioDefaults } from "@/lib/planning/finance";
 import { emptyHistory } from "@/lib/history";
 import type { Workspace } from "@/lib/planning/workspace";
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
+it("loads the dashboard when browser policy blocks cross-tab notifications", async () => {
+  vi.spyOn(planRepository, "loadWorkspace").mockResolvedValue({
+    plan,
+    enhancements: emptyEnhancements(plan.id),
+  });
+  vi.spyOn(planRepository, "loadHistory").mockResolvedValue(
+    emptyHistory(plan.id),
+  );
+  vi.stubGlobal(
+    "BroadcastChannel",
+    class {
+      constructor() {
+        throw new DOMException("Restricted", "SecurityError");
+      }
+    },
+  );
+  const onChange = vi.fn();
+  const { result } = renderHook(() => useWorkspace(plan, onChange));
+  await waitFor(() => expect(result.current.loading).toBe(false));
+  expect(onChange).toHaveBeenCalledWith(plan);
+  expect(result.current.workspace.enhancements.planId).toBe(plan.id);
+});
 it("preserves unsaved decisions and rejects a conflicting revision before retrying", async () => {
   const initial = emptyEnhancements(plan.id),
     change = vi.fn();

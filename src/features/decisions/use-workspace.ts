@@ -74,10 +74,13 @@ export function useWorkspace(
       .finally(() => {
         if (active) setLoading(false);
       });
-    const channel =
-      typeof BroadcastChannel !== "undefined"
-        ? new BroadcastChannel("eventgenie-revisions")
-        : undefined;
+    // Some browser policies expose the API but reject its construction.
+    // Notifications are optional; atomic revision checks still protect writes.
+    let channel: BroadcastChannel | undefined;
+    try {
+      if (typeof BroadcastChannel !== "undefined")
+        channel = new BroadcastChannel("eventgenie-revisions");
+    } catch {}
     if (channel)
       channel.onmessage = (event) => {
         if (

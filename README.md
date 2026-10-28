@@ -1,14 +1,16 @@
 # EventGenie AI
 
+[![Release quality gates](https://github.com/SUJALMU2004/eventgenie/actions/workflows/quality.yml/badge.svg?branch=main)](https://github.com/SUJALMU2004/eventgenie/actions/workflows/quality.yml)
+
 A local-first, India-first celebration planner for **Challenge 5: Celebration & Event Planner**. Turn wedding, birthday and community-event requirements into an actionable blueprint with budgets, timelines, vendor categories, personalised ideas and invitation drafts.
 
 The application has no login, hosted database, payment processing, analytics or mandatory paid infrastructure. Plans and manual financial records stay in the current browser; AI generation uses Google's direct Gemini API.
 
 ## Release verification — Phase 4
 
-The release audit retains all three phases and hardens upload deadlines, cancellation, final-stream validation, atomic-save notifications, responsive keyboard access and form contrast. **534 automated tests and 29 production Chromium tests pass locally**. Core coverage is **98.32% statements / 96.58% branches / 96.47% functions / 98.63% lines**; ordinary tests and production builds work without a Gemini key. One small synthetic Phase 4 Gemini invitation request was verified live.
+The release audit retains all three phases and hardens upload deadlines, cancellation, final-stream validation, atomic-save notifications, responsive keyboard access and form contrast. **535 automated tests and 29 production Chromium tests pass locally**. Core coverage is **98.32% statements / 96.58% branches / 96.47% functions / 98.63% lines**; ordinary tests and production builds work without a Gemini key. One small synthetic Phase 4 Gemini invitation request was verified live.
 
-Start with the [architecture and trust boundaries](docs/architecture.md), [audit and measured baseline comparison](docs/phase4-audit.md), [criterion-by-criterion evaluation matrix](docs/phase4-evaluation-matrix.md), and [release/setup/submission guide](docs/phase4-release.md). The owner reports a clean terminal dependency audit; this agent's advisory request failed, so that evidence remains qualified. Full screen-reader certification and untested external behavior are not claimed. **No Vercel deployment or linking is authorized or performed.** No external evaluation score is guaranteed.
+Start with the [architecture and trust boundaries](docs/architecture.md), [audit and measured baseline comparison](docs/phase4-audit.md), [criterion-by-criterion evaluation matrix](docs/phase4-evaluation-matrix.md), and [release/setup/submission guide](docs/phase4-release.md). Dependency auditing passed in GitHub Actions with **0 reported vulnerabilities**. Full screen-reader certification and untested external behavior are not claimed. **No Vercel deployment or linking is authorized or performed.** No external evaluation score is guaranteed.
 
 ## Phase 3 — Confident decisions
 
