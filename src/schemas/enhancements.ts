@@ -34,7 +34,7 @@ export const enhancementSchema = z
   })
   .strict();
 export type PlanEnhancements = z.infer<typeof enhancementSchema>;
-/** Additive migration: a Phase 1 plan receives defaults without rewriting its version-1 record. */
+/** Legacy plans receive decision defaults without rewriting their version-1 records. */
 export function emptyEnhancements(planId: string): PlanEnhancements {
   return {
     schemaVersion: 2,

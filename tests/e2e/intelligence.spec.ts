@@ -402,5 +402,5 @@ test("mobile keyboard, disclosure, clipboard/share fallbacks and draft preservat
     ),
   ).toBe(true);
   await invitations.scrollIntoViewIfNeeded();
-  await page.screenshot({ path: "artifacts/phase3-mobile.png" });
+  await page.screenshot({ path: "artifacts/intelligence-mobile.png" });
 });

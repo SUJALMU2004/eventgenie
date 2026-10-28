@@ -42,7 +42,7 @@ export function DecisionStudio({ state }: { state: WorkspaceState }) {
           <p className="eyebrow">A LITTLE MORE CLARITY FOR THE BIG DECISIONS</p>
           <h2 id="studio-title">Your Decision Studio.</h2>
         </div>
-        <span className="badge">Phases 2 & 3 · Local-first</span>
+        <span className="badge">Local-first planning</span>
       </div>
       <nav
         className="studio-navigation no-print"
@@ -120,7 +120,7 @@ export function DecisionStudio({ state }: { state: WorkspaceState }) {
             })
           }
         >
-          Load fictional Phase 2 examples
+          Load fictional planning examples
         </Button>
       </div>
       <section id="advanced-planning" className="advanced-entry no-print">

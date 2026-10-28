@@ -42,7 +42,6 @@ export default function RootLayout({
             eventgenie.
           </Link>
           <p>A little planning. A lot to celebrate.</p>
-          <p>Made for your moments · Phases 1–3</p>
           <Link href="/privacy">Privacy & local storage</Link>
         </footer>
       </body>

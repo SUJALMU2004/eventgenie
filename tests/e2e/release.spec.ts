@@ -102,7 +102,7 @@ test("expanded decisions reflow at 320px and 200-percent-equivalent CSS width", 
   }
   await page.setViewportSize({ width: 320, height: 900 });
   await axe(page);
-  await page.screenshot({ path: "artifacts/phase4-dashboard-320.png" });
+  await page.screenshot({ path: "artifacts/dashboard-320.png" });
 });
 test("confirmation contains keyboard focus, escapes safely and restores the trigger", async ({
   page,

@@ -28,15 +28,15 @@ export default function PrivacyPage() {
         </a>{" "}
         before sharing sensitive information.
       </p>
-      <h2>Phase 2 decisions and backups</h2>
+      <h2>Planning decisions and backups</h2>
       <p>
         Manual vendor quotes, optional vendor contacts, paid-amount records,
-        scenarios and event-day schedules stay in this browser. Targeted Phase 2
-        AI operations exclude event titles, vendor names and contacts, guest
-        lists, existing invitation text and private notes. They send only
-        necessary event/category figures, an applicable time window and the
-        preferences you explicitly enter. Do not enter names or other sensitive
-        information in AI preferences.
+        scenarios and event-day schedules stay in this browser. Targeted AI
+        operations exclude event titles, vendor names and contacts, guest lists,
+        existing invitation text and private notes. They send only necessary
+        event/category figures, an applicable time window and the preferences
+        you explicitly enter. Do not enter names or other sensitive information
+        in AI preferences.
       </p>
       <p>
         JSON backups contain only the selected event and its owned decisions,
@@ -47,15 +47,16 @@ export default function PrivacyPage() {
       </p>
       <h2>No hidden sharing</h2>
       <p>
-        Phase 3 keeps up to 20 reversible local changes and five saved answers
-        per event. History does not duplicate AI caches or conversations. New
-        assistant, task and contingency requests exclude private task titles,
-        vendor contacts and full records. Only relevant category/date/status
-        facts and your bounded question or preferences go to Google. Invitation
-        messages, verified venue/time and RSVP details stay local; optional AI
-        generates generic opening and closing prose. Native sharing opens only
-        when you select Share, and Copy and Download remain available. Backups
-        omit history, conversations and disposable AI caches.
+        EventGenie keeps up to 20 reversible local changes and five saved
+        answers per event. History does not duplicate AI caches or
+        conversations. The assistant, task and contingency requests exclude
+        private task titles, vendor contacts and full records. Only relevant
+        category/date/status facts and your bounded question or preferences go
+        to Google. Invitation messages, verified venue/time and RSVP details
+        stay local; optional AI generates generic opening and closing prose.
+        Native sharing opens only when you select Share, and Copy and Download
+        remain available. Backups omit history, conversations and disposable AI
+        caches.
       </p>
       <p>
         EventGenie has no accounts, cloud database, analytics, invitation

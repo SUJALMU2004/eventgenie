@@ -461,7 +461,7 @@ describe("minimized, grounded intelligence contracts", () => {
     );
   });
 });
-describe("Phase 3 streaming HTTP boundary", () => {
+describe("Contextual intelligence streaming HTTP boundary", () => {
   it.each(options)(
     "streams a complete validated $operation",
     async (option) => {

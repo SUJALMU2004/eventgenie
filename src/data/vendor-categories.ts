@@ -5,7 +5,7 @@ const mapping: Record<EventType, readonly Priority[]> = {
   birthday: ["cake", "catering", "entertainment", "venue"],
   community: ["venue", "av", "catering", "safety"],
 };
-/** Labels and questions remain owned by the original Phase 1 templates. */
+/** Labels and questions come from the shared event-specific templates. */
 export function vendorCategories(type: EventType) {
   return vendorTemplates[type].map((template, index) => ({
     ...template,

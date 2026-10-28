@@ -214,7 +214,7 @@ test("private JSON backup restore and safe all-day calendar download", async ({
 }) => {
   await createEvent(page, "community");
   await page
-    .getByRole("button", { name: "Load fictional Phase 2 examples" })
+    .getByRole("button", { name: "Load fictional planning examples" })
     .click();
   await confirm(page);
   await openSection(page, "export");
@@ -308,7 +308,7 @@ test("mobile keyboard access and print layout expose saved schedule without cont
       .getByRole("button", { name: "Add vendor", exact: true }),
   ).toBeVisible();
   await page
-    .getByRole("button", { name: "Load fictional Phase 2 examples" })
+    .getByRole("button", { name: "Load fictional planning examples" })
     .click();
   await confirm(page);
   await openSection(page, "day-of");
@@ -318,7 +318,7 @@ test("mobile keyboard access and print layout expose saved schedule without cont
     ),
   ).toBe(true);
   await page.screenshot({
-    path: "artifacts/phase2-mobile.png",
+    path: "artifacts/decisions-mobile.png",
     fullPage: true,
   });
   await page.emulateMedia({ media: "print" });
