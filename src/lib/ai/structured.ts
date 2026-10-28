@@ -50,25 +50,29 @@ export async function* streamStructured(
     // The partial stream can throw a generic wrapper after onError has supplied
     // the actionable provider error. Preserve the original status for the UI.
     const reason = streamError ?? error;
-    const name =
-      typeof reason === "object" && reason !== null && "name" in reason
-        ? reason.name
-        : undefined;
-    const status =
-      typeof reason === "object" && reason !== null && "statusCode" in reason
-        ? reason.statusCode
-        : undefined;
-    // Operational metadata only: SDK errors can contain keys and full prompts.
-    console.warn(
-      "eventgenie.provider-error",
-      JSON.stringify({
-        type:
-          typeof name === "string" && /^AI_[A-Za-z]+Error$/.test(name)
-            ? name
-            : "UnexpectedError",
-        ...(typeof status === "number" ? { status } : {}),
-      }),
-    );
+    logProviderFailure(reason);
     throw reason;
   }
+}
+
+function logProviderFailure(reason: unknown) {
+  const name =
+    typeof reason === "object" && reason !== null && "name" in reason
+      ? reason.name
+      : undefined;
+  const status =
+    typeof reason === "object" && reason !== null && "statusCode" in reason
+      ? reason.statusCode
+      : undefined;
+  // Operational metadata only: SDK errors can contain keys and full prompts.
+  console.warn(
+    "eventgenie.provider-error",
+    JSON.stringify({
+      type:
+        typeof name === "string" && /^AI_[A-Za-z]+Error$/.test(name)
+          ? name
+          : "UnexpectedError",
+      ...(typeof status === "number" ? { status } : {}),
+    }),
+  );
 }

@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { gzipSync } from "node:zlib";
 import {
   validateIntelligenceRequest,
   offlineIntelligence,
@@ -209,4 +210,185 @@ test("reviewed answer, cancellation, error accessibility, plain-text output and 
   await expect(ask.getByRole("alert")).toContainText("cancelled");
   await axe(page);
   expect(exceptions).toEqual([]);
+});
+test("CSP blocks inline handlers, frames and base changes while HTTP stays usable", async ({
+  page,
+  request,
+}) => {
+  const http = await request.get("/");
+  expect(http.headers()["strict-transport-security"]).toBeUndefined();
+  const tls = await request.get("/", {
+    headers: { "x-forwarded-proto": "https" },
+  });
+  expect(tls.headers()["strict-transport-security"]).toBe("max-age=31536000");
+  for (const directive of [
+    "script-src-attr 'none'",
+    "frame-src 'none'",
+    "base-uri 'none'",
+  ])
+    expect(http.headers()["content-security-policy"]).toContain(directive);
+  await page.goto("/");
+  const originalBase = await page.evaluate(() => document.baseURI);
+  await page.evaluate(() => {
+    const violations: string[] = [];
+    document.addEventListener("securitypolicyviolation", (event) => {
+      violations.push(event.effectiveDirective);
+      document.documentElement.dataset.cspViolations =
+        JSON.stringify(violations);
+    });
+    const button = document.createElement("button");
+    button.setAttribute(
+      "onclick",
+      "document.documentElement.dataset.inlineExecuted='yes'",
+    );
+    document.body.append(button);
+    button.click();
+    button.remove();
+    const base = document.createElement("base");
+    base.href = "https://example.invalid/";
+    document.head.append(base);
+    const frame = document.createElement("iframe");
+    frame.src = "/privacy";
+    frame.title = "CSP test frame";
+    document.body.append(frame);
+  });
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          JSON.parse(
+            document.documentElement.dataset.cspViolations ?? "[]",
+          ) as string[],
+      ),
+    )
+    .toEqual(
+      expect.arrayContaining(["script-src-attr", "frame-src", "base-uri"]),
+    );
+  expect(
+    await page.evaluate(() => document.documentElement.dataset.inlineExecuted),
+  ).toBeUndefined();
+  expect(await page.evaluate(() => document.baseURI)).toBe(originalBase);
+});
+test("known costs, task edits and schedule edits expose focused field errors to assistive technology", async ({
+  page,
+}) => {
+  await saved(page);
+  const scenario = page.locator("#what-if"),
+    cost = scenario.getByLabel("Minimum known cost", { exact: true });
+  await cost.fill("0");
+  const set = scenario.getByRole("button", { name: "Set category minimum" });
+  await set.focus();
+  await page.keyboard.press("Enter");
+  await expect(cost).toBeFocused();
+  await expect(cost).toHaveAttribute("aria-invalid", "true");
+  await expect(cost).toHaveAccessibleDescription(/positive INR amount/);
+  await axe(page);
+  await cost.fill("100");
+  await set.click();
+  await expect(cost).toHaveAttribute("aria-invalid", "false");
+  await page
+    .getByRole("button", { name: "Review suggested next task" })
+    .click();
+  const title = page.getByLabel("Task title", { exact: true });
+  await title.fill("");
+  await page
+    .getByRole("button", { name: "Review task change", exact: true })
+    .click();
+  await expect(title).toBeFocused();
+  await expect(title).toHaveAccessibleDescription(/Too small/);
+  await axe(page);
+  const schedule = page.locator("#day-of");
+  await schedule.locator(":scope > summary").click();
+  await schedule
+    .getByRole("button", { name: "Load sample day-of schedule" })
+    .click();
+  const duration = schedule.getByLabel("Activity 1 duration (minutes)", {
+    exact: true,
+  });
+  await duration.fill("0");
+  await schedule
+    .getByRole("button", { name: "Save day-of schedule", exact: true })
+    .click();
+  await expect(duration).toBeFocused();
+  await expect(duration).toHaveAttribute("aria-invalid", "true");
+  await expect(duration).toHaveAccessibleDescription(/Too small/);
+  await expect(page.getByRole("dialog")).not.toBeVisible();
+  await axe(page);
+});
+test("failed reload confirmation stays open, describes failure and restores focus after cancellation", async ({
+  page,
+}) => {
+  await saved(page);
+  const id = page.url().split("/").at(-1);
+  await page.evaluate(async (id) => {
+    const database = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("eventgenie-local-v1", 3);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(new Error("Test database unavailable"));
+    });
+    await new Promise<void>((resolve, reject) => {
+      const transaction = database.transaction(
+        ["plans", "events", "enhancements", "history"],
+        "readwrite",
+      );
+      for (const name of ["plans", "events", "enhancements", "history"])
+        transaction.objectStore(name).delete(id ?? "");
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(new Error("Test deletion failed"));
+    });
+    database.close();
+  }, id);
+  const trigger = page.getByRole("button", {
+    name: "Reload saved version",
+    exact: true,
+  });
+  await trigger.click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toHaveAccessibleDescription(/latest saved/i);
+  await dialog
+    .getByRole("button", { name: "Confirm change", exact: true })
+    .click();
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("alert")).toContainText("could not be applied");
+  await expect(dialog).toHaveAccessibleDescription(
+    /original saved data is preserved/,
+  );
+  await axe(page);
+  await page.keyboard.press("Escape");
+  await expect(dialog).not.toBeVisible();
+  await expect(trigger).toBeFocused();
+  await trigger.click();
+  await expect(dialog.getByRole("alert")).toHaveCount(0);
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(trigger).toBeFocused();
+});
+test("initial planner JavaScript stays within five percent of the audited baseline", async ({
+  request,
+}, testInfo) => {
+  const html = await (await request.get("/plan")).text();
+  const scripts = [
+    ...new Set(
+      [...html.matchAll(/<script[^>]+src="([^"]+\.js(?:\?[^"]*)?)"/g)].map(
+        (match) => match[1].replaceAll("&amp;", "&"),
+      ),
+    ),
+  ];
+  expect(scripts.length).toBeGreaterThan(0);
+  const sizes = await Promise.all(
+    scripts.map(
+      async (url) => gzipSync(await (await request.get(url)).body()).byteLength,
+    ),
+  );
+  const gzipBytes = sizes.reduce((sum, size) => sum + size, 0),
+    baselineBytes = 246681;
+  await testInfo.attach("initial-planner-js.json", {
+    body: JSON.stringify({
+      baselineBytes,
+      gzipBytes,
+      scripts: scripts.length,
+      changePercent: 100 * (gzipBytes / baselineBytes - 1),
+    }),
+    contentType: "application/json",
+  });
+  expect(gzipBytes).toBeLessThanOrEqual(Math.floor(baselineBytes * 1.05));
 });

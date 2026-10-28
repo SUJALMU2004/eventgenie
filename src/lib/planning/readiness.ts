@@ -22,22 +22,7 @@ export function inspectReadiness(
     remainingDays = daysBetween(date, plan.event.date);
   const graph = inspectDependencies(plan, dependencies);
   const findings: ReadinessFinding[] = [];
-  for (const edge of dependencies) {
-    const task = graph.tasks.get(edge.taskId)!;
-    if (
-      !task.completed &&
-      edge.dependsOn.some((id) => {
-        const prerequisite = graph.tasks.get(id)!;
-        return !prerequisite.completed && prerequisite.dueDate > task.dueDate;
-      })
-    )
-      findings.push({
-        ruleId: "RULE_DEPENDENCY_DEADLINE_CONFLICT",
-        severity: "attention",
-        message: `${task.title} is due before an unfinished prerequisite. Review these deadlines explicitly.`,
-        taskId: task.id,
-      });
-  }
+  addDeadlineFindings(graph, dependencies, findings);
   const overdue = plan.tasks.filter(
     (task) => !task.completed && task.dueDate < date,
   );
@@ -51,36 +36,9 @@ export function inspectReadiness(
       message: `${task.title} was due on ${task.dueDate}.`,
       taskId: task.id,
     });
-  for (const task of graph.blocked) {
-    const overdueDependencies = (graph.requirements.get(task.id) ?? []).filter(
-      (id) => {
-        const prerequisite = graph.tasks.get(id)!;
-        return !prerequisite.completed && prerequisite.dueDate < date;
-      },
-    );
-    findings.push({
-      ruleId: "RULE_DEPENDENCY_BLOCKED",
-      severity: overdueDependencies.length ? "critical" : "attention",
-      message: `${task.title} has unfinished prerequisites${overdueDependencies.length ? ", including overdue dependencies" : ""}.`,
-      taskId: task.id,
-    });
-  }
-  for (const category of vendorCategories(plan.event.eventType))
-    if (
-      !quotes.some(
-        (quote) => quote.category === category.id && quote.booking === "booked",
-      ) &&
-      !plan.vendors.some(
-        (vendor) =>
-          vendor.category.toLowerCase() === category.category.toLowerCase() &&
-          vendor.completed,
-      )
-    )
-      findings.push({
-        ruleId: "RULE_VENDOR_NOT_BOOKED",
-        severity: remainingDays <= 14 ? "critical" : "attention",
-        message: `${category.category}: no booked quote or completed matching supplier checklist decision.`,
-      });
+
+  addBlockedFindings(graph, date, findings);
+  addVendorFindings(plan, quotes, remainingDays, findings);
   const finance = financialPosition(plan, quotes, expenses);
   if (finance.shortfallMinor)
     findings.push({
@@ -128,4 +86,71 @@ export function inspectReadiness(
             ? "A few things to review"
             : "No critical blockers found",
   };
+}
+
+type DependencyGraph = ReturnType<typeof inspectDependencies>;
+function addDeadlineFindings(
+  graph: DependencyGraph,
+  dependencies: TaskDependency[],
+  findings: ReadinessFinding[],
+) {
+  for (const edge of dependencies) {
+    const task = graph.tasks.get(edge.taskId)!;
+    if (
+      !task.completed &&
+      edge.dependsOn.some((id) => {
+        const prerequisite = graph.tasks.get(id)!;
+        return !prerequisite.completed && prerequisite.dueDate > task.dueDate;
+      })
+    )
+      findings.push({
+        ruleId: "RULE_DEPENDENCY_DEADLINE_CONFLICT",
+        severity: "attention",
+        message: `${task.title} is due before an unfinished prerequisite. Review these deadlines explicitly.`,
+        taskId: task.id,
+      });
+  }
+}
+function addBlockedFindings(
+  graph: DependencyGraph,
+  date: string,
+  findings: ReadinessFinding[],
+) {
+  for (const task of graph.blocked) {
+    const overdueDependencies = (graph.requirements.get(task.id) ?? []).filter(
+      (id) => {
+        const prerequisite = graph.tasks.get(id)!;
+        return !prerequisite.completed && prerequisite.dueDate < date;
+      },
+    );
+    findings.push({
+      ruleId: "RULE_DEPENDENCY_BLOCKED",
+      severity: overdueDependencies.length ? "critical" : "attention",
+      message: `${task.title} has unfinished prerequisites${overdueDependencies.length ? ", including overdue dependencies" : ""}.`,
+      taskId: task.id,
+    });
+  }
+}
+function addVendorFindings(
+  plan: EventPlan,
+  quotes: VendorQuote[],
+  remainingDays: number,
+  findings: ReadinessFinding[],
+) {
+  for (const category of vendorCategories(plan.event.eventType))
+    if (
+      !quotes.some(
+        (quote) => quote.category === category.id && quote.booking === "booked",
+      ) &&
+      !plan.vendors.some(
+        (vendor) =>
+          vendor.category.toLowerCase() === category.category.toLowerCase() &&
+          vendor.completed,
+      )
+    )
+      findings.push({
+        ruleId: "RULE_VENDOR_NOT_BOOKED",
+        severity: remainingDays <= 14 ? "critical" : "attention",
+        message: `${category.category}: no booked quote or completed matching supplier checklist decision.`,
+      });
 }

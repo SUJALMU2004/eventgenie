@@ -1,4 +1,4 @@
-import { z } from "zod";
+import type { z } from "zod";
 import {
   operationRequestSchema,
   rescueOutputSchema,
@@ -245,15 +245,7 @@ export function normalizeOperation(
 export function operationPreview(input: OperationRequest, raw: unknown) {
   if (typeof raw !== "object" || raw === null) return null;
   // Validate individual complete items, never an incomplete full object.
-  const kind =
-    input.operation === "rescue-ideas"
-      ? "rescue"
-      : input.operation === "day-of-schedule" ||
-          input.action === "children-schedule"
-        ? "schedule"
-        : input.action && actionRegistry[input.action].target === "invitations"
-          ? "invitations"
-          : "ideas";
+  const kind = operationPreviewKind(input);
   const key =
     kind === "rescue"
       ? "recommendations"
@@ -379,4 +371,17 @@ export function offlineOperation(input: OperationRequest): OperationOutput {
               : idea.description,
     })),
   });
+}
+
+function operationPreviewKind(input: OperationRequest) {
+  const kind =
+    input.operation === "rescue-ideas"
+      ? "rescue"
+      : input.operation === "day-of-schedule" ||
+          input.action === "children-schedule"
+        ? "schedule"
+        : input.action && actionRegistry[input.action].target === "invitations"
+          ? "invitations"
+          : "ideas";
+  return kind;
 }

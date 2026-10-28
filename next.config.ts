@@ -19,8 +19,17 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Content-Security-Policy",
-            value: `default-src 'self'; script-src 'self' 'unsafe-inline'${developmentEval}; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'`,
+            value: `default-src 'self'; script-src 'self' 'unsafe-inline'${developmentEval}; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'`,
           },
+        ],
+      },
+      // Trust the TLS terminator's protocol for this response only. Do not opt
+      // unrelated subdomains into HSTS or request preload enrollment.
+      {
+        source: "/(.*)",
+        has: [{ type: "header", key: "x-forwarded-proto", value: "https" }],
+        headers: [
+          { key: "Strict-Transport-Security", value: "max-age=31536000" },
         ],
       },
     ];

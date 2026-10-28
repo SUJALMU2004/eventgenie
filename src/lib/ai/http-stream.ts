@@ -205,22 +205,13 @@ export function createStructuredHandler<Input, Result, Preview>(options: {
                 break;
               } catch (error) {
                 const safe = safeError(signal.aborted ? signal.reason : error);
-                const retryable = [
-                  "PROVIDER_UNAVAILABLE",
-                  "NETWORK_ERROR",
-                  "RATE_LIMITED",
-                ].includes(safe.detail.code);
-                const wait =
-                  safe.detail.retryAfter === undefined
-                    ? 500 * 2 ** attempt
-                    : safe.detail.retryAfter * 1000;
-                if (
-                  attempt === 0 &&
-                  !previewSent &&
-                  retryable &&
-                  wait <= 2000 &&
-                  !signal.aborted
-                ) {
+                const wait = retryDelay(
+                  safe.detail,
+                  attempt,
+                  previewSent,
+                  signal,
+                );
+                if (wait !== undefined) {
                   await sleep(wait, signal);
                   continue;
                 }
@@ -267,4 +258,28 @@ export function createStructuredHandler<Input, Result, Preview>(options: {
       );
     }
   };
+}
+
+function retryDelay(
+  error: ApiError,
+  attempt: number,
+  previewSent: boolean,
+  signal: AbortSignal,
+): number | undefined {
+  const transient = [
+    "PROVIDER_UNAVAILABLE",
+    "NETWORK_ERROR",
+    "RATE_LIMITED",
+  ].includes(error.code);
+  const wait =
+    error.retryAfter === undefined
+      ? 500 * 2 ** attempt
+      : error.retryAfter * 1000;
+  return attempt === 0 &&
+    !previewSent &&
+    transient &&
+    wait <= 2000 &&
+    !signal.aborted
+    ? wait
+    : undefined;
 }

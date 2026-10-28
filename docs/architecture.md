@@ -2,7 +2,7 @@
 
 ## Current release
 
-Phase 4 retains the architecture and database version **3**. It strengthens shared transport deadlines/finalization, post-commit notification isolation, accessible controls and release tooling. See [the audit](phase4-audit.md) and [evaluation matrix](phase4-evaluation-matrix.md) for measured evidence. This repository contains no deployment workflow and must not be linked or deployed to Vercel under the current authorization.
+The evaluation remediation retains database version **3**, all three endpoints, NDJSON versions and local cache namespaces. Storage commands, AI contracts and UI orchestration now have focused modules. See [current measurements and evaluation evidence](evaluation-remediation.md); [the earlier Phase 4 audit](phase4-audit.md) remains historical. This repository contains no deployment workflow and must not be linked or deployed to Vercel under the current authorization.
 
 ```mermaid
 flowchart TD
@@ -34,6 +34,33 @@ tests/e2e/                  full event journeys, axe and release browser checks
 scripts/                    tracked-size and source/index/history/bundle credential checks
 docs/                       architecture, evaluation evidence and release instructions
 ```
+
+## Responsibility boundaries
+
+| Boundary               | Modules                                                                             | Responsibility                                                                                                                                                          |
+| ---------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Persistence contract   | `storage/contracts.ts`, `repository.ts`                                             | Existing `PlanRepository` API and compatibility exports; compose lower-level services.                                                                                  |
+| Storage infrastructure | `storage/database.ts`, `record-store.ts`, `errors.ts`                               | Version-3 connections, additive store creation, request/transaction promises, bounded owned record access and typed failures.                                           |
+| Durable validation     | `storage/records.ts`, planning schemas                                              | Validate envelopes and records before use; never reset incompatible data.                                                                                               |
+| Workspace commands     | `storage/workspace-store.ts`, `plan-store.ts`                                       | Initial save/import and revision-checked mutations/history; retain one transaction across plans, events, enhancements and history. Notify other tabs only after commit. |
+| Optional notification  | `storage/notifications.ts`                                                          | Publish plan ID, revision and random tab source only; browser policy failures never undo a completed save.                                                              |
+| Targeted AI UI         | `decisions/use-plan-operation.ts`, `ai-workbench.tsx`, `operation-proposal.tsx`     | Request/cache/cancellation and reviewed acceptance separated from controls and proposal presentation; reuse the shared NDJSON transport and retry utilities.            |
+| Intelligence contracts | `ai/intelligence-contracts.ts`, `intelligence-input.ts`                             | Operation types, operation-specific requirements, privacy minimization and valid task references.                                                                       |
+| Intelligence context   | `ai/intelligence-context.ts`, `intelligence-identity.ts`                            | Relevant structured facts and stable input fingerprints; canonical schema parsing preserves payload order and cache identity.                                           |
+| Intelligence output    | `ai/intelligence-output.ts`, `intelligence-prompt.ts`, `intelligence-samples.ts`    | Validate and normalize output, trusted instructions and clearly labelled deterministic samples. `intelligence.ts` preserves prior exports.                              |
+| Deterministic rules    | `planning/contingency-rules.ts`, `readiness.ts`, `schedule.ts`, `task-workflows.ts` | Event-specific rule handlers and pure validation; application-owned financial calculations, identifiers and approved changes.                                           |
+| Form feedback          | `lib/validation.ts`, `features/forms/use-field-errors.tsx`                          | Domain/Zod field paths become associated errors and focus targets. Unknown failures use a focusable summary.                                                            |
+| Confirmations          | `components/ui/confirmation.tsx`                                                    | Native modal focus, described consequences, pending save status, retained failures and successful-only closure.                                                         |
+
+The contingency controller and presentation are separate (`use-contingency.ts`, `presentation.tsx`). Schedule activity editing and dashboard statistics/status also use focused presentation components. Render paths do not request AI output. Existing lazy imports for the dashboard and Decision Studio remain in place.
+
+ESLint uses the TypeScript project service to check floating/misused promises, type-only imports and unnecessary assertions, with a complexity limit of 15 across source functions. TypeScript also checks unused locals/parameters, implicit returns and switch fallthrough. No per-function complexity suppressions or relaxed coverage exclusions were added.
+
+## Browser policy and accessible edits
+
+Static pages retain their build-time rendering. The CSP explicitly blocks inline event-handler attributes, all frame loading and base URL changes. Static Next.js bootstrap scripts still require the existing inline script permission; this is a documented tradeoff, not a strict nonce policy. React renders generated text without interpreting HTML. One-year HSTS is attached only when the TLS terminator supplies `x-forwarded-proto: https`, without subdomain/preload commitments. A real hosting environment must set/overwrite that header at its trusted proxy boundary; local HTTP gets no HSTS header.
+
+Known-cost input is controlled React state. Invalid amounts expose a currency-aware message, `aria-invalid`, associated descriptions and focus without changing the scenario. Task and schedule validation use field paths, including original activity indexes when times are sorted for validation. Schedule drafts are checked before confirmation, then revalidated against the current workspace during the save. A failed confirmation stays open with an associated error; a new confirmation has no stale error. Native dialogs restore focus on cancellation.
 
 ## Preserved implementation history
 

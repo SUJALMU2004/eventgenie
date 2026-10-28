@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { ScenarioComparison } from "./scenario-comparison";
 import { Button } from "@/components/ui/button";
 import { budgetCategories } from "@/data/templates";
@@ -8,6 +8,7 @@ import { scenarioDefaults, simulateScenario } from "@/lib/planning/finance";
 import { applyScenario } from "@/lib/planning/workspace";
 import type { Scenario, ScenarioInput } from "@/schemas/finance";
 import { DecisionPanel, type DecisionProps } from "./types";
+import { prioritySchema } from "@/schemas/event";
 export function ScenarioPanel({
   workspace,
   update,
@@ -22,6 +23,13 @@ export function ScenarioPanel({
       moneyInput(plan.event.budgetMinor, plan.event.currency),
     ),
     [name, setName] = useState("My scenario");
+  const [knownCategory, setKnownCategory] = useState(
+    budgetCategories[plan.event.eventType][0].id,
+  );
+  const [knownCost, setKnownCost] = useState("");
+  const [knownCostError, setKnownCostError] = useState("");
+  const knownCostRef = useRef<HTMLInputElement>(null);
+  const knownCostId = useId();
   const result = useMemo(() => {
     try {
       return {
@@ -63,6 +71,24 @@ export function ScenarioPanel({
       createdAt: new Date().toISOString(),
       input,
     };
+  }
+  function setCategoryMinimum() {
+    const minimumMinor = parseMoney(knownCost, plan.event.currency);
+    if (minimumMinor === null) {
+      setKnownCostError(
+        `Enter a positive ${plan.event.currency} amount using the currency's supported decimal precision.`,
+      );
+      knownCostRef.current?.focus();
+      return;
+    }
+    setKnownCostError("");
+    setInput((current) => ({
+      ...current,
+      knownCosts: [
+        ...current.knownCosts.filter((item) => item.category !== knownCategory),
+        { category: knownCategory, minimumMinor },
+      ],
+    }));
   }
   return (
     <DecisionPanel
@@ -190,8 +216,10 @@ export function ScenarioPanel({
         <label>
           Known-cost category
           <select
-            id="known-category"
-            defaultValue={budgetCategories[plan.event.eventType][0].id}
+            value={knownCategory}
+            onChange={(event) =>
+              setKnownCategory(prioritySchema.parse(event.target.value))
+            }
           >
             {budgetCategories[plan.event.eventType].map((category) => (
               <option key={category.id} value={category.id}>
@@ -202,37 +230,36 @@ export function ScenarioPanel({
         </label>
         <form
           className="known-cost-form"
+          noValidate
           onSubmit={(event) => {
             event.preventDefault();
-            const form = new FormData(event.currentTarget);
-            const category = (
-              document.getElementById("known-category") as HTMLSelectElement
-            ).value;
-            const minimumMinor = parseMoney(
-              String(form.get("cost")),
-              plan.event.currency,
-            );
-            if (minimumMinor === null) return;
-            setInput((current) => ({
-              ...current,
-              knownCosts: [
-                ...current.knownCosts.filter(
-                  (item) => item.category !== category,
-                ),
-                {
-                  category: budgetCategories[plan.event.eventType].find(
-                    (item) => item.id === category,
-                  )!.id,
-                  minimumMinor,
-                },
-              ],
-            }));
+            setCategoryMinimum();
           }}
         >
           <label>
             Minimum known cost
-            <input name="cost" inputMode="decimal" required />
+            <input
+              id={knownCostId}
+              ref={knownCostRef}
+              name="cost"
+              inputMode="decimal"
+              required
+              value={knownCost}
+              aria-invalid={Boolean(knownCostError)}
+              aria-describedby={
+                knownCostError ? `${knownCostId}-error` : undefined
+              }
+              onChange={(event) => {
+                setKnownCost(event.target.value);
+                setKnownCostError("");
+              }}
+            />
           </label>
+          {knownCostError ? (
+            <p id={`${knownCostId}-error`} role="alert" className="field-error">
+              {knownCostError}
+            </p>
+          ) : null}
           <Button size="small" variant="secondary" type="submit">
             Set category minimum
           </Button>

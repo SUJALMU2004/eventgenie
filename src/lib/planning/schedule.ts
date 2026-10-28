@@ -1,6 +1,6 @@
 import type { EventPlan } from "@/schemas/plan";
+import type { activityRoles } from "@/schemas/schedule";
 import {
-  activityRoles,
   scheduleSchema,
   scheduleWindowSchema,
   type DayOfActivity,
@@ -9,6 +9,7 @@ import {
 } from "@/schemas/schedule";
 import type { EventType } from "@/schemas/event";
 import { vendorCategories } from "@/data/vendor-categories";
+import { FieldValidationError } from "@/lib/validation";
 export function parseTime(value: string): number | null {
   const match = /^(\d{2}):(\d{2})$/.exec(value);
   if (!match || Number(match[1]) > 23 || Number(match[2]) > 59) return null;
@@ -106,22 +107,13 @@ export function validateSchedule(
   const vendorIds = new Set(
     vendorCategories(plan.event.eventType).map((item) => item.id),
   );
+  const sourceIndexes = new Map(
+    schedule.activities.map((item, index) => [item.id, index]),
+  );
   for (const [index, item] of sorted.entries()) {
-    if (
-      item.startMinute < schedule.startMinute ||
-      item.startMinute + item.durationMinutes > schedule.endMinute
-    )
-      throw new Error(`${item.title} falls outside the declared event window`);
-    if (
-      index &&
-      sorted[index - 1].startMinute + sorted[index - 1].durationMinutes >
-        item.startMinute
-    )
-      throw new Error(`${sorted[index - 1].title} overlaps with ${item.title}`);
-    if (item.taskId && !plan.tasks.some((task) => task.id === item.taskId))
-      throw new Error("Schedule links to a missing preparation task");
-    if (item.vendorCategory && !vendorIds.has(item.vendorCategory))
-      throw new Error("Schedule links to an unsupported supplier category");
+    const field = `activities.${sourceIndexes.get(item.id) ?? index}`;
+    validateActivityTiming(item, sorted[index - 1], schedule, field);
+    validateActivityLinks(item, plan, vendorIds, field);
   }
   const required =
     plan.event.eventType === "wedding"
@@ -155,4 +147,45 @@ export function reorderSchedule(
       return next;
     }),
   };
+}
+
+function validateActivityTiming(
+  item: DayOfActivity,
+  previous: DayOfActivity | undefined,
+  schedule: DayOfSchedule,
+  field: string,
+) {
+  if (
+    item.startMinute < schedule.startMinute ||
+    item.startMinute + item.durationMinutes > schedule.endMinute
+  )
+    throw new FieldValidationError(
+      `${field}.startMinute`,
+      `${item.title} falls outside the declared event window`,
+    );
+  if (
+    previous &&
+    previous.startMinute + previous.durationMinutes > item.startMinute
+  )
+    throw new FieldValidationError(
+      `${field}.startMinute`,
+      `${previous.title} overlaps with ${item.title}`,
+    );
+}
+function validateActivityLinks(
+  item: DayOfActivity,
+  plan: Parameters<typeof validateSchedule>[0],
+  vendorIds: Set<string>,
+  field: string,
+) {
+  if (item.taskId && !plan.tasks.some((task) => task.id === item.taskId))
+    throw new FieldValidationError(
+      `${field}.taskId`,
+      "Schedule links to a missing preparation task",
+    );
+  if (item.vendorCategory && !vendorIds.has(item.vendorCategory))
+    throw new FieldValidationError(
+      `${field}.vendorCategory`,
+      "Schedule links to an unsupported supplier category",
+    );
 }

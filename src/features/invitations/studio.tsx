@@ -50,10 +50,7 @@ export function InvitationStudio(props: DecisionProps) {
     tone,
     length,
   });
-  let preview = "";
-  try {
-    preview = composeInvitation(plan, body, facts);
-  } catch {}
+  const preview = invitationPreview(plan, body, facts);
   function choose(value: number) {
     setIndex(value);
     setOriginal(plan.invitations[value]);
@@ -325,4 +322,15 @@ export function InvitationStudio(props: DecisionProps) {
       </details>
     </DecisionPanel>
   );
+}
+
+function invitationPreview(
+  ...args: Parameters<typeof composeInvitation>
+): string {
+  try {
+    return composeInvitation(...args);
+  } catch {
+    // Incomplete facts are expected during editing; the studio shows its validation notice.
+    return "";
+  }
 }

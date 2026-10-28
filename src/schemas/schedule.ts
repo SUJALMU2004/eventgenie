@@ -28,10 +28,11 @@ export const scheduleWindowSchema = z
     ]),
   })
   .strict()
-  .refine(
-    (value) => value.endMinute > value.startMinute,
-    "Use a same-day window with the end after the start; overnight events are not supported.",
-  );
+  .refine((value) => value.endMinute > value.startMinute, {
+    message:
+      "Use a same-day window with the end after the start; overnight events are not supported.",
+    path: ["endMinute"],
+  });
 export const activityContentSchema = z
   .object({
     title: localText(120).min(1),

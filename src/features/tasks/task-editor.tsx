@@ -10,6 +10,7 @@ import {
   type TaskProposal,
 } from "@/lib/planning/task-workflows";
 import type { DecisionProps } from "@/features/decisions/types";
+import { FormErrors, useFieldErrors } from "@/features/forms/use-field-errors";
 export function TaskEditor({
   initial,
   props,
@@ -19,8 +20,8 @@ export function TaskEditor({
   props: DecisionProps;
   close: () => void;
 }) {
-  const [draft, setDraft] = useState(initial),
-    [error, setError] = useState("");
+  const [draft, setDraft] = useState(initial);
+  const validation = useFieldErrors();
   const [original] = useState(() =>
     JSON.stringify(
       props.workspace.plan.tasks.find((task) => task.id === initial.taskId),
@@ -30,7 +31,7 @@ export function TaskEditor({
     try {
       taskProposalSchema.parse(draft);
       applyTaskProposal(props.workspace, draft);
-      setError("");
+      validation.clear();
       props.confirm({
         title: draft.taskId
           ? "Apply this task edit?"
@@ -57,9 +58,7 @@ export function TaskEditor({
         },
       });
     } catch (value) {
-      setError(
-        value instanceof Error ? value.message : "Check the proposed task.",
-      );
+      validation.report(value);
     }
   }
   return (
@@ -69,6 +68,7 @@ export function TaskEditor({
         <label>
           Task title
           <input
+            {...validation.field("title")}
             maxLength={120}
             value={draft.title}
             onChange={(e) => setDraft({ ...draft, title: e.target.value })}
@@ -77,6 +77,7 @@ export function TaskEditor({
         <label>
           Reason / instructions
           <textarea
+            {...validation.field("reason")}
             maxLength={500}
             value={draft.reason}
             onChange={(e) => setDraft({ ...draft, reason: e.target.value })}
@@ -85,6 +86,7 @@ export function TaskEditor({
         <label>
           Task category
           <select
+            {...validation.field("category")}
             value={draft.category}
             onChange={(e) =>
               setDraft({
@@ -105,6 +107,7 @@ export function TaskEditor({
         <label>
           Proposed deadline
           <input
+            {...validation.field("dueDate")}
             type="date"
             min={today()}
             max={props.workspace.plan.event.date}
@@ -115,6 +118,7 @@ export function TaskEditor({
         <label>
           Task priority
           <select
+            {...validation.field("priority")}
             value={draft.priority}
             onChange={(e) =>
               setDraft({
@@ -131,6 +135,7 @@ export function TaskEditor({
         <label>
           Prerequisites (up to three)
           <select
+            {...validation.field("relatedTaskIds")}
             multiple
             value={draft.relatedTaskIds}
             onChange={(e) =>
@@ -157,7 +162,11 @@ export function TaskEditor({
         {draft.assumptions.join(" ") ||
           "The organiser must confirm feasibility."}
       </p>
-      {error ? <p role="alert">{error}</p> : null}
+      <FormErrors
+        errors={validation.errors}
+        errorId={validation.errorId}
+        summaryRef={validation.summaryRef}
+      />
       <div className="button-row">
         <Button disabled={props.busy} onClick={review}>
           Review task change

@@ -279,8 +279,11 @@ test("dependency cycles, schedule conflicts and Gemini failure preserve work", a
   await schedule
     .getByRole("button", { name: "Save day-of schedule", exact: true })
     .click();
-  await confirm(page);
   await expect(schedule.getByRole("alert")).toContainText("overlaps");
+  await expect(
+    schedule.getByLabel("Activity 2 start", { exact: true }),
+  ).toBeFocused();
+  await expect(page.getByRole("dialog")).not.toBeVisible();
   await openSection(page, "refinement");
   const refine = page.locator("#refinement");
   await refine

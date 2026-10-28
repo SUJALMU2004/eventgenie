@@ -13,6 +13,24 @@ it("restricts production execution and framing", async () => {
   expect(await policy()).not.toContain("unsafe-eval");
   expect(await policy()).toContain("frame-ancestors 'none'");
   expect(await policy()).toContain("object-src 'none'");
+  expect(await policy()).toContain("script-src-attr 'none'");
+  expect(await policy()).toContain("frame-src 'none'");
+  expect(await policy()).toContain("base-uri 'none'");
+});
+it("scopes one-year HSTS to HTTPS responses without subdomain commitments", async () => {
+  const groups = await config.headers!();
+  const hsts = groups.find((group) =>
+    group.headers.some((header) => header.key === "Strict-Transport-Security"),
+  );
+  expect(hsts).toMatchObject({
+    has: [{ type: "header", key: "x-forwarded-proto", value: "https" }],
+    headers: [{ key: "Strict-Transport-Security", value: "max-age=31536000" }],
+  });
+  expect(
+    groups[0].headers.some(
+      (header) => header.key === "Strict-Transport-Security",
+    ),
+  ).toBe(false);
 });
 it("permits React debugging eval only in development", async () => {
   vi.stubEnv("NODE_ENV", "development");

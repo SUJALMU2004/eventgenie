@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { vendorCategories } from "@/data/vendor-categories";
 import {
   exampleSchedule,
   formatTime,
@@ -11,6 +10,8 @@ import {
 } from "@/lib/planning/schedule";
 import type { DayOfSchedule, ScheduleWindow } from "@/schemas/schedule";
 import { DecisionPanel, type DecisionProps } from "./types";
+import { FormErrors, useFieldErrors } from "@/features/forms/use-field-errors";
+import { ScheduleActivityEditor } from "./schedule-activity-editor";
 import { AIWorkbench } from "./ai-workbench";
 export function SchedulePanel(props: DecisionProps) {
   const { workspace, update, confirm, busy } = props,
@@ -27,8 +28,8 @@ export function SchedulePanel(props: DecisionProps) {
   const [draft, setDraft] = useState<DayOfSchedule | undefined>(
       enhancements.schedule,
     ),
-    [dirty, setDirty] = useState(false),
-    [error, setError] = useState("");
+    [dirty, setDirty] = useState(false);
+  const validation = useFieldErrors();
   const window: ScheduleWindow = {
     startMinute: parseTime(start) ?? -1,
     endMinute: parseTime(end) ?? -1,
@@ -56,7 +57,7 @@ export function SchedulePanel(props: DecisionProps) {
       const load = async () => {
         setDraft(next);
         setDirty(true);
-        setError("");
+        validation.clear();
         return true;
       };
       if (dirty || enhancements.schedule)
@@ -68,20 +69,13 @@ export function SchedulePanel(props: DecisionProps) {
         });
       else void load();
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "Check the event window",
-      );
+      validation.report(error);
     }
   }
   async function save() {
-    if (!draft) return;
+    if (!draft) return false;
     try {
-      const value = validateSchedule(plan, {
-        ...draft,
-        ...window,
-        source: draft.source === "demo" ? "demo" : "user",
-        updatedAt: new Date().toISOString(),
-      });
+      const value = validatedDraft();
       const saved = await update((current) => ({
         ...current,
         enhancements: {
@@ -93,12 +87,35 @@ export function SchedulePanel(props: DecisionProps) {
       if (saved) {
         setDraft(value);
         setDirty(false);
-        setError("");
+        validation.clear();
       }
+      return saved;
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "Check schedule conflicts",
-      );
+      validation.report(error);
+      return false;
+    }
+  }
+  function validatedDraft() {
+    if (!draft) throw new Error("Load a schedule draft first.");
+    return validateSchedule(plan, {
+      ...draft,
+      ...window,
+      source: draft.source === "demo" ? "demo" : "user",
+      updatedAt: new Date().toISOString(),
+    });
+  }
+  function reviewSave() {
+    try {
+      validatedDraft();
+      validation.clear();
+      confirm({
+        title: "Save this event-day schedule?",
+        description:
+          "This replaces the saved schedule with the edited draft. Preparation tasks and vendor commitments are unchanged. Conflicting times will be rejected.",
+        action: save,
+      });
+    } catch (error) {
+      validation.report(error);
     }
   }
   return (
@@ -117,6 +134,7 @@ export function SchedulePanel(props: DecisionProps) {
           Event start time
           <input
             type="time"
+            {...validation.field("startMinute")}
             value={start}
             onChange={(event) => {
               setStart(event.target.value);
@@ -128,6 +146,7 @@ export function SchedulePanel(props: DecisionProps) {
           Event end time
           <input
             type="time"
+            {...validation.field("endMinute")}
             value={end}
             onChange={(event) => {
               setEnd(event.target.value);
@@ -138,6 +157,7 @@ export function SchedulePanel(props: DecisionProps) {
         <label>
           Event local time zone
           <select
+            {...validation.field("timeZone")}
             value={timeZone}
             onChange={(event) => {
               setTimeZone(event.target.value as ScheduleWindow["timeZone"]);
@@ -156,17 +176,7 @@ export function SchedulePanel(props: DecisionProps) {
           Load sample day-of schedule
         </Button>
         {draft ? (
-          <Button
-            disabled={busy}
-            onClick={() =>
-              confirm({
-                title: "Save this event-day schedule?",
-                description:
-                  "This replaces the saved schedule with the edited draft. Preparation tasks and vendor commitments are unchanged. Conflicting times will be rejected.",
-                action: saveAndConfirm,
-              })
-            }
-          >
+          <Button disabled={busy} onClick={reviewSave}>
             Save day-of schedule
           </Button>
         ) : null}
@@ -176,7 +186,7 @@ export function SchedulePanel(props: DecisionProps) {
             onClick={() => {
               setDraft(enhancements.schedule);
               setDirty(false);
-              setError("");
+              validation.clear();
               if (enhancements.schedule) {
                 setStart(formatTime(enhancements.schedule.startMinute));
                 setEnd(formatTime(enhancements.schedule.endMinute));
@@ -194,123 +204,19 @@ export function SchedulePanel(props: DecisionProps) {
           running order.
         </p>
       ) : null}
-      {error ? (
-        <p role="alert" className="error-notice">
-          {error}
-        </p>
-      ) : null}
+      <FormErrors
+        errors={validation.errors}
+        errorId={validation.errorId}
+        summaryRef={validation.summaryRef}
+      />
       {draft ? (
-        <div className="schedule-editor no-print">
-          <p className="small-text">
-            {draft.activities.length} activities ·{" "}
-            {draft.activities.reduce(
-              (sum, item) => sum + item.durationMinutes,
-              0,
-            )}{" "}
-            scheduled minutes · positive durations, no overlaps and
-            setup-to-cleanup order required.
-          </p>
-          {draft.activities.map((item, index) => (
-            <fieldset key={item.id} className="schedule-block">
-              <legend>
-                Activity {index + 1} · {item.role}
-              </legend>
-              <div className="form-grid">
-                <label>
-                  Activity {index + 1} title
-                  <input
-                    maxLength={120}
-                    value={item.title}
-                    onChange={(event) =>
-                      edit(index, { title: event.target.value })
-                    }
-                  />
-                </label>
-                <label>
-                  Activity {index + 1} start
-                  <input
-                    type="time"
-                    value={formatTime(item.startMinute)}
-                    onChange={(event) =>
-                      edit(index, {
-                        startMinute: parseTime(event.target.value) ?? -1,
-                      })
-                    }
-                  />
-                </label>
-                <label>
-                  Activity {index + 1} duration (minutes)
-                  <input
-                    type="number"
-                    min={1}
-                    max={1440}
-                    value={item.durationMinutes}
-                    onChange={(event) =>
-                      edit(index, {
-                        durationMinutes: Number(event.target.value),
-                      })
-                    }
-                  />
-                </label>
-                <label>
-                  Activity {index + 1} vendor category
-                  <select
-                    value={item.vendorCategory ?? ""}
-                    onChange={(event) =>
-                      edit(index, {
-                        vendorCategory:
-                          vendorCategories(plan.event.eventType).find(
-                            (vendor) => vendor.id === event.target.value,
-                          )?.id ?? null,
-                      })
-                    }
-                  >
-                    <option value="">No vendor link</option>
-                    {vendorCategories(plan.event.eventType).map((vendor) => (
-                      <option key={vendor.id} value={vendor.id}>
-                        {vendor.category}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="field-wide">
-                  Activity {index + 1} linked preparation task
-                  <select
-                    value={item.taskId ?? ""}
-                    onChange={(event) =>
-                      edit(index, { taskId: event.target.value || null })
-                    }
-                  >
-                    <option value="">No task link</option>
-                    {plan.tasks.map((task) => (
-                      <option key={task.id} value={task.id}>
-                        {task.title}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-              <div className="action-row">
-                <Button
-                  variant="ghost"
-                  size="small"
-                  disabled={index === 0}
-                  onClick={() => move(index, -1)}
-                >
-                  Move activity {index + 1} up
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="small"
-                  disabled={index === draft.activities.length - 1}
-                  onClick={() => move(index, 1)}
-                >
-                  Move activity {index + 1} down
-                </Button>
-              </div>
-            </fieldset>
-          ))}
-        </div>
+        <ScheduleActivityEditor
+          draft={draft}
+          plan={plan}
+          edit={edit}
+          move={move}
+          validation={validation}
+        />
       ) : (
         <p className="notice">
           No event-day schedule yet. Load an offline sample or request an AI
@@ -330,7 +236,12 @@ export function SchedulePanel(props: DecisionProps) {
           <p className="small-text">
             {enhancements.schedule.timeZone} · event date {plan.event.date}
           </p>
-          <div className="table-scroll">
+          <div
+            className="table-scroll"
+            role="region"
+            tabIndex={0}
+            aria-label="Scrollable saved event-day activities"
+          >
             <table className="decision-table">
               <caption>Saved event-day activities</caption>
               <thead>
@@ -367,10 +278,6 @@ export function SchedulePanel(props: DecisionProps) {
       />
     </DecisionPanel>
   );
-  async function saveAndConfirm() {
-    await save();
-    return false;
-  }
   function move(index: number, direction: number) {
     if (!draft) return;
     const activities = [...draft.activities];

@@ -119,29 +119,11 @@ export function PlanDashboard({
   const remaining = daysBetween(today(), plan.event.date);
   return (
     <main id="main" className="page-width dashboard-page">
-      <div className="dashboard-toolbar">
-        <Link href="/plans" className="back-link">
-          <ArrowLeft size={15} aria-hidden="true" /> My plans
-        </Link>
-        <div className="save-indicator" role="status">
-          <ShieldCheck size={15} aria-hidden="true" />
-          {updating
-            ? "Saving…"
-            : saved
-              ? "Saved in this browser"
-              : "Not saved — keep this tab open"}
-        </div>
-      </div>
-      {plan.source === "demo" ? (
-        <div className="demo-banner">
-          <Sparkles size={18} aria-hidden="true" />
-          <strong>Sample plan · deterministic demo data</strong>
-          <span>
-            The initial blueprint is sample data. Later AI previews are labelled
-            separately.
-          </span>
-        </div>
-      ) : null}
+      <DashboardToolbar
+        updating={updating}
+        saved={saved}
+        source={plan.source}
+      />
       <header className="dashboard-header">
         <div>
           <p className="eyebrow">
@@ -194,33 +176,7 @@ export function PlanDashboard({
           findings from the current plan.
         </p>
       ) : null}
-      <div className="stats-grid">
-        <div>
-          <span>Your planning envelope</span>
-          <strong>
-            {formatMoney(plan.event.budgetMinor, plan.event.currency)}
-          </strong>
-          <small>Planned, including contingency</small>
-        </div>
-        <div>
-          <span>The little details</span>
-          <strong>
-            {plan.tasks.filter((task) => task.completed).length}
-            <small> / {plan.tasks.length}</small>
-          </strong>
-          <small>Planning tasks completed</small>
-        </div>
-        <div>
-          <span>
-            {remaining >= 0 ? "The countdown" : "A moment to remember"}
-          </span>
-          <strong>
-            {Math.abs(remaining)}{" "}
-            <small>days {remaining < 0 ? "ago" : "to go"}</small>
-          </strong>
-          <small>One step closer to something special</small>
-        </div>
-      </div>
+      <DashboardStats plan={plan} remaining={remaining} />
       <section className="overview-panel" aria-labelledby="overview-title">
         <span className="overview-star" aria-hidden="true">
           ✳
@@ -331,5 +287,80 @@ export function PlanDashboard({
         <Link href="/privacy">Learn about privacy</Link>
       </p>
     </main>
+  );
+}
+
+function DashboardStats({
+  plan,
+  remaining,
+}: {
+  plan: EventPlan;
+  remaining: number;
+}) {
+  return (
+    <div className="stats-grid">
+      <div>
+        <span>Your planning envelope</span>
+        <strong>
+          {formatMoney(plan.event.budgetMinor, plan.event.currency)}
+        </strong>
+        <small>Planned, including contingency</small>
+      </div>
+      <div>
+        <span>The little details</span>
+        <strong>
+          {plan.tasks.filter((task) => task.completed).length}
+          <small> / {plan.tasks.length}</small>
+        </strong>
+        <small>Planning tasks completed</small>
+      </div>
+      <div>
+        <span>{remaining >= 0 ? "The countdown" : "A moment to remember"}</span>
+        <strong>
+          {Math.abs(remaining)}{" "}
+          <small>days {remaining < 0 ? "ago" : "to go"}</small>
+        </strong>
+        <small>One step closer to something special</small>
+      </div>
+    </div>
+  );
+}
+
+function DashboardToolbar({
+  updating,
+  saved,
+  source,
+}: {
+  updating: boolean;
+  saved: boolean;
+  source: EventPlan["source"];
+}) {
+  return (
+    <>
+      {" "}
+      <div className="dashboard-toolbar">
+        <Link href="/plans" className="back-link">
+          <ArrowLeft size={15} aria-hidden="true" /> My plans
+        </Link>
+        <div className="save-indicator" role="status">
+          <ShieldCheck size={15} aria-hidden="true" />
+          {updating
+            ? "Saving…"
+            : saved
+              ? "Saved in this browser"
+              : "Not saved — keep this tab open"}
+        </div>
+      </div>
+      {source === "demo" ? (
+        <div className="demo-banner">
+          <Sparkles size={18} aria-hidden="true" />
+          <strong>Sample plan · deterministic demo data</strong>
+          <span>
+            The initial blueprint is sample data. Later AI previews are labelled
+            separately.
+          </span>
+        </div>
+      ) : null}
+    </>
   );
 }

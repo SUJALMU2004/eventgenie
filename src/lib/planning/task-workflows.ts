@@ -6,6 +6,7 @@ import { budgetCategories } from "@/data/templates";
 import { today, taskDate } from "@/lib/dates";
 import { validateWorkspace, type Workspace } from "./workspace";
 import { inspectReadiness } from "./readiness";
+import { FieldValidationError } from "@/lib/validation";
 export const taskProposalSchema = z
   .object({
     taskId: localText(180).optional(),
@@ -36,60 +37,8 @@ export function applyTaskProposal(
 ): Workspace {
   const proposal = taskProposalSchema.parse(raw),
     { plan, enhancements } = workspace;
-  if (proposal.dueDate < today(clock) || proposal.dueDate > plan.event.date)
-    throw new Error("Task deadlines must be between today and the event date.");
-  if (!taskCategories(workspace).includes(proposal.category))
-    throw new Error("Choose a category for this event type.");
-  const existing = proposal.taskId
-    ? plan.tasks.find((task) => task.id === proposal.taskId)
-    : undefined;
-  if (proposal.taskId && !existing)
-    throw new Error("The referenced task does not exist in this event.");
-  if (existing?.completed)
-    throw new Error(
-      "Completed tasks are preserved. Reopen the task explicitly before editing it.",
-    );
-  if (
-    plan.tasks.some(
-      (task) =>
-        task.id !== proposal.taskId &&
-        task.title.trim().toLocaleLowerCase() ===
-          proposal.title.trim().toLocaleLowerCase(),
-    )
-  )
-    throw new Error("A task with this title already exists.");
-  if (
-    proposal.relatedTaskIds.some(
-      (id) =>
-        id === proposal.taskId || !plan.tasks.some((task) => task.id === id),
-    )
-  )
-    throw new Error(
-      "Task dependencies must reference other tasks in this event.",
-    );
-  if (
-    proposal.relatedTaskIds.some((id) => {
-      const task = plan.tasks.find((item) => item.id === id)!;
-      return !task.completed && task.dueDate > proposal.dueDate;
-    })
-  )
-    throw new Error("A task cannot be due before an unfinished prerequisite.");
-  if (
-    proposal.taskId &&
-    enhancements.dependencies.some(
-      (edge) =>
-        edge.dependsOn.includes(proposal.taskId!) &&
-        plan.tasks.some(
-          (task) =>
-            task.id === edge.taskId &&
-            !task.completed &&
-            task.dueDate < proposal.dueDate,
-        ),
-    )
-  )
-    throw new Error(
-      "Review dependent deadlines before delaying their prerequisite.",
-    );
+  const existing = validateTaskEligibility(workspace, proposal, clock);
+  validateTaskDependencies(workspace, proposal);
   const id = existing?.id ?? `${plan.id}-task-${crypto.randomUUID()}`;
   const task = {
     id,
@@ -170,4 +119,92 @@ export function nextActions(
         ? undefined
         : proposal,
   };
+}
+
+/** Preserve prerequisite ownership and deadline ordering before applying an edit. */
+function validateTaskDependencies(
+  { plan, enhancements }: Workspace,
+  proposal: TaskProposal,
+) {
+  if (
+    proposal.relatedTaskIds.some(
+      (id) =>
+        id === proposal.taskId || !plan.tasks.some((task) => task.id === id),
+    )
+  )
+    throw new FieldValidationError(
+      "relatedTaskIds",
+      "Task dependencies must reference other tasks in this event.",
+    );
+  if (
+    proposal.relatedTaskIds.some((id) => {
+      const task = plan.tasks.find((item) => item.id === id)!;
+      return !task.completed && task.dueDate > proposal.dueDate;
+    })
+  )
+    throw new FieldValidationError(
+      "dueDate",
+      "A task cannot be due before an unfinished prerequisite.",
+    );
+  if (
+    proposal.taskId &&
+    enhancements.dependencies.some(
+      (edge) =>
+        edge.dependsOn.includes(proposal.taskId!) &&
+        plan.tasks.some(
+          (task) =>
+            task.id === edge.taskId &&
+            !task.completed &&
+            task.dueDate < proposal.dueDate,
+        ),
+    )
+  )
+    throw new FieldValidationError(
+      "dueDate",
+      "Review dependent deadlines before delaying their prerequisite.",
+    );
+}
+
+function validateTaskEligibility(
+  workspace: Workspace,
+  proposal: TaskProposal,
+  clock: () => Date,
+) {
+  const { plan } = workspace;
+  if (proposal.dueDate < today(clock) || proposal.dueDate > plan.event.date)
+    throw new FieldValidationError(
+      "dueDate",
+      "Task deadlines must be between today and the event date.",
+    );
+  if (!taskCategories(workspace).includes(proposal.category))
+    throw new FieldValidationError(
+      "category",
+      "Choose a category for this event type.",
+    );
+  const existing = proposal.taskId
+    ? plan.tasks.find((task) => task.id === proposal.taskId)
+    : undefined;
+  if (proposal.taskId && !existing)
+    throw new FieldValidationError(
+      "taskId",
+      "The referenced task does not exist in this event.",
+    );
+  if (existing?.completed)
+    throw new FieldValidationError(
+      "taskId",
+      "Completed tasks are preserved. Reopen the task explicitly before editing it.",
+    );
+  if (
+    plan.tasks.some(
+      (task) =>
+        task.id !== proposal.taskId &&
+        task.title.trim().toLocaleLowerCase() ===
+          proposal.title.trim().toLocaleLowerCase(),
+    )
+  )
+    throw new FieldValidationError(
+      "title",
+      "A task with this title already exists.",
+    );
+  return existing;
 }

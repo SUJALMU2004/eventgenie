@@ -10,47 +10,8 @@ export async function consumeStructuredStream<Preview, Complete>(
     | { type: "error"; error: ApiError }
   >,
 ): Promise<Complete> {
-  if (!response.ok) {
-    const raw: unknown = await response.json().catch(() => null);
-    const parsed = apiErrorSchema.safeParse(
-      typeof raw === "object" && raw !== null && "error" in raw
-        ? raw.error
-        : null,
-    );
-    if (parsed.success)
-      throw failure(
-        parsed.data.code,
-        parsed.data.message,
-        response.status,
-        parsed.data.retryable,
-        parsed.data.retryAfter,
-      );
-    if (response.status === 429)
-      throw failure(
-        "RATE_LIMITED",
-        "Too many requests. Wait a minute before retrying, or open a sample plan.",
-        429,
-        true,
-        60,
-      );
-    throw failure(
-      "NETWORK_ERROR",
-      "The server could not complete generation. Your details are preserved.",
-      response.status,
-      true,
-    );
-  }
-  if (
-    !response.body ||
-    !response.headers.get("content-type")?.includes("application/x-ndjson")
-  )
-    throw failure(
-      "INVALID_STREAM",
-      "An invalid response was received. Nothing was saved.",
-      502,
-      true,
-    );
-  const reader = response.body.getReader(),
+  const body = await streamBody(response);
+  const reader = body.getReader(),
     decoder = new TextDecoder();
   let buffer = "",
     receivedBytes = 0,
@@ -117,4 +78,50 @@ export async function consumeStructuredStream<Preview, Complete>(
     await reader.cancel().catch(() => undefined);
     reader.releaseLock();
   }
+}
+
+async function streamBody(
+  response: Response,
+): Promise<ReadableStream<Uint8Array>> {
+  if (!response.ok) {
+    const raw: unknown = await response.json().catch(() => null);
+    const parsed = apiErrorSchema.safeParse(
+      typeof raw === "object" && raw !== null && "error" in raw
+        ? raw.error
+        : null,
+    );
+    if (parsed.success)
+      throw failure(
+        parsed.data.code,
+        parsed.data.message,
+        response.status,
+        parsed.data.retryable,
+        parsed.data.retryAfter,
+      );
+    if (response.status === 429)
+      throw failure(
+        "RATE_LIMITED",
+        "Too many requests. Wait a minute before retrying, or open a sample plan.",
+        429,
+        true,
+        60,
+      );
+    throw failure(
+      "NETWORK_ERROR",
+      "The server could not complete generation. Your details are preserved.",
+      response.status,
+      true,
+    );
+  }
+  if (
+    !response.body ||
+    !response.headers.get("content-type")?.includes("application/x-ndjson")
+  )
+    throw failure(
+      "INVALID_STREAM",
+      "An invalid response was received. Nothing was saved.",
+      502,
+      true,
+    );
+  return response.body;
 }

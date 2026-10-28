@@ -80,7 +80,10 @@ export function useWorkspace(
     try {
       if (typeof BroadcastChannel !== "undefined")
         channel = new BroadcastChannel("eventgenie-revisions");
-    } catch {}
+    } catch {
+      // Cross-tab hints are optional. Commit-time revision checks still prevent
+      // overwriting a newer saved version when browser policy blocks channels.
+    }
     if (channel)
       channel.onmessage = (event) => {
         if (

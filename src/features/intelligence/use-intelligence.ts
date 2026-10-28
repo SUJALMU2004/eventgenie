@@ -8,12 +8,12 @@ import {
   requestIdentity,
   type IntelligenceOptions,
 } from "@/lib/ai/intelligence";
+import type { intelligencePreviewSchema } from "@/schemas/intelligence";
 import {
   intelligenceStreamSchema,
   emptyIntelligence,
   type IntelligenceOutput,
   type IntelligenceRequest,
-  intelligencePreviewSchema,
 } from "@/schemas/intelligence";
 import type { z } from "zod";
 import { consumeStructuredStream } from "@/lib/ndjson-client";
@@ -51,7 +51,10 @@ export function useIntelligence(
       props.workspace,
       buildIntelligenceRequest(props.workspace, options),
     );
-  } catch {}
+  } catch {
+    // Incomplete local options have no valid identity. Generation reports the
+    // validation error; an existing proposal is treated as stale in the meantime.
+  }
   const latest = useRef(identity);
   useEffect(() => {
     latest.current = identity;

@@ -1,6 +1,6 @@
+import type { invitationToneSchema } from "@/schemas/intelligence";
 import {
   invitationFactsSchema,
-  invitationToneSchema,
   type PlanIntelligence,
 } from "@/schemas/intelligence";
 import { formatDate } from "./dates";
